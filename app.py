@@ -38,5 +38,11 @@ def consulta():
     except Exception:
         return "erro,-"
 
+def get_ip(dominio):
+    try:
+        return socket.gethostbyname(dominio)
+    except:
+        return "-"
+        
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
