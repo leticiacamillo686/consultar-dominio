@@ -1,5 +1,6 @@
 from flask import Flask, request
 import requests
+import socket
 
 app = Flask(__name__)
 
@@ -7,22 +8,26 @@ app = Flask(__name__)
 def consulta():
     dominio = request.args.get("dominio", "")
     if not dominio:
-        return "Sem domínio"
+        return "sem domínio,-,-"
 
     dominio = dominio.replace("http://", "").replace("https://", "").strip("/")
-    rdap_url = f"https://rdap.registro.br/domain/{dominio}"
+    rdap_url = f"https://rdap.org/domain/{dominio}"
 
     headers = {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "application/rdap+json"
+        "User-Agent": "HTTPie/3.2.2",
+        "Accept": "application/rdap+json",
+        "Connection": "keep-alive",
+        "Accept-Encoding": "gzip, deflate, br"
     }
 
     try:
-        r = requests.get(rdap_url, headers=headers, timeout=10)
+        r = requests.get(rdap_url, headers=headers)
         if r.status_code == 404:
-            return "disponivel,-"
+            ip = get_ip(dominio)
+            return f"disponivel,-,{ip}"
         elif r.status_code != 200:
-            return f"erro ({r.status_code}),-"
+            ip = get_ip(dominio)
+            return f"erro ({r.status_code}),-,{ip}"
 
         data = r.json()
         status = ",".join(data.get("status", [])).lower() or "sem status"
@@ -33,10 +38,11 @@ def consulta():
                 exp = event.get("eventDate", "").split("T")[0]
                 break
 
-        return f"{status},{exp}"
+        ip = get_ip(dominio)
+        return f"{status},{exp},{ip}"
 
     except Exception:
-        return "erro,-"
+        return "erro,-,-"
 
 def get_ip(dominio):
     try:
